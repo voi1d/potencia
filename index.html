@@ -1,0 +1,867 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link href="https://fonts.cdnfonts.com/css/futura-now-headline" rel="stylesheet">
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css" rel="stylesheet">
+  <title>Jogo da Potenciação</title>
+  <style>
+    html, body {
+      overflow: hidden; /* Bloqueia o scroll vertical e horizontal */
+    }
+    body {
+      font-family: 'Futura Now Headline', sans-serif;
+      text-align: center;
+      margin: 0;
+      padding: 20px;
+      width: 100%;
+      height: 100%;
+      background-color: #000000;
+      background-image: 
+        linear-gradient(0deg, transparent 24%, rgba(114,114,114,0.3) 25%, rgba(114,114,114,0.3) 26%, transparent 27%, transparent 74%, rgba(114,114,114,0.3) 75%, rgba(114,114,114,0.3) 76%, transparent 77%, transparent),
+        linear-gradient(90deg, transparent 24%, rgba(114,114,114,0.3) 25%, rgba(114,114,114,0.3) 26%, transparent 27%, transparent 74%, rgba(114,114,114,0.3) 75%, rgba(114,114,114,0.3) 76%, transparent 77%, transparent);
+      background-size: 55px 55px;
+    }
+    /* Containers de seleção e pop-up */
+    #modeSelection, #popup {
+      position: fixed;
+      top: 0; left: 0; right: 0; bottom: 0;
+      background: rgba(0, 0, 0, 0.0);
+      display: flex;
+      justify-content: center;
+      align-items: center;
+    }
+    @keyframes rainbowOutline {
+      0% { outline-color: red; }
+      12.5% { outline-color: orange; }
+      25% { outline-color: yellow; }
+      37.5% { outline-color: green; }
+      50% { outline-color: blue; }
+      62.5% { outline-color: indigo; }
+      75% { outline-color: violet; }
+      87.5% { outline-color: pink; }
+      100% { outline-color: red; }
+    }
+    .popup-content {
+      background: #fff;
+      padding: 30px;
+      border-radius: 20px;
+      text-align: left;
+      max-width: 400px;
+      box-shadow: 7px 5px 1px rgba(0, 0, 0, 0.096);
+      position: relative;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      outline: 3px solid red;
+      animation: rainbowOutline 2s linear infinite;
+    }
+    button {
+      padding: 10px;
+      margin: 10px;
+      width: 150px;
+      font-size: 16px;
+      cursor: pointer;
+      border-radius: 10px;
+      border: none;
+      outline: 3px solid rgba(0, 0, 0, 0.8);
+      background: transparent;
+    }
+    .tooltip {
+      display: none;
+      position: fixed;
+      background: #000;
+      color: #fff;
+      padding: 5px;
+      border-radius: 5px;
+      font-size: 14px;
+      pointer-events: none;
+    }
+    /* Centraliza os containers de pergunta */
+    #gameContainer,
+    #alternativasContainer,
+    #popup {
+      position: fixed;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+    }
+    /* Container para modos Normal e com Tempo */
+    #gameContainer {
+      max-width: 500px;
+      background: #fff;
+      padding: 80px;
+      border-radius: 20px;
+      box-shadow: 0 0 10px rgba(0,0,0,0.1);
+      display: none;
+    }
+    /* Container para o Modo Desafio */
+    #desafioContainer {
+      display: none;
+    }
+    #players {
+      display: flex;
+      justify-content: space-around;
+      margin-bottom: 20px;
+    }
+    .player {
+      width: 40%;
+    }
+    .trunk {
+      position: relative;
+      margin: auto;
+      width: 50px;
+      height: 200px;
+      border: 2px solid #000;
+      background: #fff;
+      border-radius: 10px;
+      overflow: hidden;
+      padding: 20px;
+    }
+    .nail {
+      position: absolute;
+      left: 5px;
+      width: 80px;
+      height: 15px;
+      border-radius: 10px;
+      background: rgb(83, 83, 83);
+      transition: top 0.5s;
+      top: 0;
+    }
+    /* Área do jogo em modo desafio */
+    #desafioGameArea {
+      background: #fff;
+      padding: 40px;
+      border-radius: 15px;
+      box-shadow: 5px 5px 1px rgba(0, 0, 0, 0.096);
+      max-width: 500px;
+      margin: auto;
+    }
+    /* Modal para troca de turno */
+    #turnSwitcher {
+      position: fixed;
+      top: 0; left: 0; right: 0; bottom: 0;
+      background: rgba(0,0,0,0.6);
+      backdrop-filter: blur(5px);
+      display: none;
+      justify-content: center;
+      align-items: center;
+      z-index: 1000;
+    }
+    #turnSwitcher span {
+      font-size: 80px;
+      color: #fff;
+    }
+    /* Container para Modo Alternativas */
+    #alternativasContainer {
+      max-width: 500px;
+      background: #fff;
+      padding: 50px;
+      border-radius: 20px;
+      box-shadow: 0 0 10px rgba(0,0,0,0.1);
+      display: none;
+    }
+    .alt-option {
+      border: 2px solid #444;
+      padding: 15px;
+      margin: 10px;
+      border-radius: 8px;
+      cursor: pointer;
+      transition: background 0.3s;
+    }
+    .alt-option:hover {
+      background: #ddd;
+    }
+    /* Elemento UI para troca de tema */
+    .theme-switch {
+      --toggle-size: 20px;
+      --container-width: 4.5em;
+      --container-height: 2em;
+      --container-radius: 5em;
+      --circle-container-diameter: 2.5em;
+      --sun-moon-diameter: 1.5em;
+      --container-light-bg: #3D7EAE;
+      --container-night-bg: #161411;
+      --sun-bg: #ECCA2F;
+      --moon-bg: #C4C9D1;
+      --spot-color: #959DB1;
+      --clouds-color: #F3FDFF;
+      --back-clouds-color: #dfceaa;
+      --transition: .5s cubic-bezier(0, -0.02, 0.4, 1.25);
+      --circle-transition: .3s cubic-bezier(0, -0.02, 0.35, 1.17);
+      position: relative;
+      display: inline-block;
+    }
+    .theme-switch, .theme-switch *, .theme-switch *::before, .theme-switch *::after {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      font-size: var(--toggle-size);
+    }
+    .theme-switch__container {
+      width: var(--container-width);
+      height: var(--container-height);
+      background-color: var(--container-light-bg);
+      border-radius: var(--container-radius);
+      overflow: hidden;
+      cursor: pointer;
+      box-shadow: 0em -0.062em 0.062em rgba(0, 0, 0, 0.25), 0em 0.062em 0.125em rgba(255, 255, 255, 0.94);
+      transition: var(--transition);
+      position: relative;
+    }
+    .theme-switch__container::before {
+      content: "";
+      position: absolute;
+      z-index: 1;
+      inset: 0;
+      box-shadow: inset 0em 0.05em 0.187em rgba(0, 0, 0, 0.25),
+                  inset 0em 0.05em 0.187em rgba(0, 0, 0, 0.25);
+      border-radius: var(--container-radius);
+    }
+    .theme-switch__checkbox {
+      display: none;
+    }
+    .theme-switch__circle-container {
+      width: var(--circle-container-diameter);
+      height: var(--circle-container-diameter);
+      background-color: rgba(255, 255, 255, 0.1);
+      position: absolute;
+      left: calc((var(--container-height) - var(--circle-container-diameter)) / 2);
+      top: calc((var(--container-height) - var(--circle-container-diameter)) / 2);
+      border-radius: var(--container-radius);
+      box-shadow: inset 0 0 0 3.375em rgba(255, 255, 255, 0.1),
+                  inset 0 0 0 0.625em rgba(255, 255, 255, 0.1);
+      display: flex;
+      transition: var(--circle-transition);
+      pointer-events: none;
+    }
+    .theme-switch__sun-moon-container {
+      pointer-events: auto;
+      position: relative;
+      z-index: 2;
+      width: var(--sun-moon-diameter);
+      height: var(--sun-moon-diameter);
+      margin: auto;
+      border-radius: var(--container-radius);
+      background-color: var(--sun-bg);
+      box-shadow: 0.062em 0.062em 0.062em rgba(254, 255, 239, 0.61) inset,
+                  0em -0.062em 0.062em #a1872a inset;
+      filter: drop-shadow(0.062em 0.125em 0.125em rgba(0, 0, 0, 0.25)) drop-shadow(0em 0.062em 0.125em rgba(0, 0, 0, 0.25));
+      overflow: hidden;
+      transition: var(--transition);
+    }
+    .theme-switch__moon {
+      transform: translateX(100%);
+      width: 100%;
+      height: 100%;
+      background-color: var(--moon-bg);
+      border-radius: inherit;
+      box-shadow: 0.062em 0.062em 0.062em rgba(254, 255, 239, 0.61) inset,
+                  0em -0.062em 0.062em #969696 inset;
+      transition: var(--transition);
+      position: relative;
+    }
+    .theme-switch__spot {
+      position: absolute;
+      top: 0.75em;
+      left: 0.312em;
+      width: 0.75em;
+      height: 0.75em;
+      border-radius: var(--container-radius);
+      background-color: var(--spot-color);
+      box-shadow: 0 0.0312em 0.062em rgba(0, 0, 0, 0.25) inset;
+    }
+    .theme-switch__spot:nth-of-type(2) {
+      width: 0.375em;
+      height: 0.375em;
+      top: 0.937em;
+      left: 1.375em;
+    }
+    .theme-switch__spot:nth-last-of-type(3) {
+      width: 0.25em;
+      height: 0.25em;
+      top: 0.312em;
+      left: 0.812em;
+    }
+    .theme-switch__clouds {
+      width: 1.25em;
+      height: 1.25em;
+      background-color: var(--clouds-color);
+      border-radius: var(--container-radius);
+      position: absolute;
+      bottom: -0.625em;
+      left: 0.312em;
+      box-shadow: 0.937em 0.312em var(--clouds-color),
+                  -0.312em -0.312em var(--back-clouds-color),
+                  1.437em 0.375em var(--clouds-color);
+      transition: 0.5s cubic-bezier(0, -0.02, 0.4, 1.25);
+    }
+    .theme-switch__stars-container {
+      position: absolute;
+      color: #fff;
+      top: -100%;
+      left: 0.312em;
+      width: 2.75em;
+      transition: var(--transition);
+    }
+    .theme-switch__checkbox:checked + .theme-switch__container {
+      background-color: var(--container-night-bg);
+    }
+    .theme-switch__checkbox:checked + .theme-switch__container .theme-switch__circle-container {
+      left: calc(100% - ((var(--container-height) - var(--circle-container-diameter)) / 2) - var(--circle-container-diameter));
+    }
+    .theme-switch__checkbox:checked + .theme-switch__container .theme-switch__moon {
+      transform: translateX(0);
+    }
+    .theme-switch__checkbox:checked + .theme-switch__container .theme-switch__clouds {
+      bottom: -4.062em;
+    }
+    .theme-switch__checkbox:checked + .theme-switch__container .theme-switch__stars-container {
+      top: 50%;
+      transform: translateY(-50%);
+    }
+    .theme-switch-wrapper {
+      position: fixed;
+      bottom: 20px;
+      right: 20px;
+      z-index: 1100;
+    }
+    /* Botão "X" para voltar */
+    .back-button {
+      position: absolute;
+      top: 10px;
+      right: 10px;
+      font-size: 24px;
+      cursor: pointer;
+      color: #000;
+      background: transparent;
+      border-radius: 50%;
+      width: 30px;
+      height: 30px;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      z-index: 1200;
+    }
+    #respostaDesafio, #resposta {
+      border-radius: 15px;
+      padding: 8px;
+    }
+    p, h3 {
+      color: #444;
+    }
+        /* Modal para troca de turno com fundo borrado */
+        #turnSwitcher {
+      position: fixed;
+      top: 0; left: 0; right: 0; bottom: 0;
+      background: rgba(0,0,0,0.6);
+      backdrop-filter: blur(5px);
+      display: none;
+      justify-content: center;
+      align-items: center;
+      z-index: 1000;
+    }
+    #turnSwitcher span {
+      font-size: 80px;
+      color: #fff;
+    }
+    /* Tooltip para o canto inferior esquerdo */
+    .corner-tooltip1 {
+      position: fixed;
+      bottom: 10px;
+      left: 10px;
+      z-index: 1500;
+    }
+    .corner-tooltip1 .tooltip1 {
+      position: relative;
+      display: inline-block;
+      cursor: pointer;
+      pointer-events: auto;
+    }
+    .corner-tooltip1 .tooltip1 button {
+      background-color: #000;
+      color: #fff;
+      border: none;
+      padding: 10px 20px;
+      border-radius: 15px;
+      font-size: 16px;
+      cursor: pointer;
+      transition: background-color 0.3s, transform 0.2s ease-out;
+    }
+    .corner-tooltip1 .tooltip1 button:hover {
+      background-color: #ff7300;
+      transform: scale(1.05);
+    }
+    .corner-tooltip1 .tooltip1:hover .tooltiptext1 {
+      visibility: visible;
+      opacity: 1;
+    }
+    .corner-tooltip1 .tooltiptext1 {
+      visibility: hidden;
+      width: 160px;
+      background-color: #333;
+      color: #fff;
+      text-align: center;
+      border-radius: 15px;
+      padding: 5px;
+      position: absolute;
+      z-index: 1;
+      bottom: 125%;
+      left: 50%;
+      margin-left: -80px;
+      opacity: 0;
+      transition: opacity 0.3s;
+    }
+    .corner-tooltip1 .tooltiptext1::after {
+      content: "";
+      position: absolute;
+      top: 100%;
+      left: 50%;
+      margin-left: -5px;
+      border-width: 5px;
+      border-style: solid;
+      border-color: #333 transparent transparent transparent;
+    }
+    
+    /* Media queries para telas menores */
+    @media only screen and (max-width: 768px) {
+      body {
+        padding: 10px;
+      }
+      .popup-content {
+        padding: 20px;
+        max-width: 90%;
+      }
+      #gameContainer,
+      #alternativasContainer,
+      #popup {
+        width: 90%;
+        padding: 20px;
+      }
+      .back-button {
+        top: 5px;
+        right: 5px;
+        width: 25px;
+        height: 25px;
+        font-size: 20px;
+      }
+      .trunk {
+        width: 40px;
+        height: 150px;
+        padding: 10px;
+      }
+      .nail {
+        width: 60px;
+        height: 10px;
+      }
+      .theme-switch-wrapper {
+        bottom: 10px;
+        right: 10px;
+      }
+      /* Ajusta os botões para ficarem menores */
+      button {
+        width: 120px;
+        padding: 8px;
+        font-size: 14px;
+      }
+      .corner-tooltip1 .tooltip1 button {
+        padding: 8px 15px;
+        font-size: 14px;
+      }
+    }
+  </style>
+</head>
+<body>  
+  <div class="corner-tooltip1">
+    <div class="tooltip1">
+      <button>Potenciaçao</button>
+      <div class="tooltiptext1">
+        A potenciação é uma forma de multiplicação repetida. Por exemplo, 2<sup>3</sup> significa multiplicar o 2 por ele mesmo três vezes: 2 × 2 × 2 = 8. Ela serve para simplificar expressões matemáticas e é muito usada em diversas áreas, desde a matemática básica até a física e a engenharia. Lembre-se que qualquer número elevado a 0 é 1.
+      </div>
+    </div>
+  </div>
+  
+  <!-- Seleção de Modo -->
+  <div id="modeSelection">
+    <div class="popup-content">
+      <h2>Escolha o Modo de Jogo</h2>
+      <button onmouseover="mostrarTooltip('Responda sem limite de tempo.')" onmouseout="esconderTooltip()" onclick="mostrarRegras('normal')">Modo Normal</button>
+      <button onmouseover="mostrarTooltip('Você tem 60 segundos para responder o máximo possível.')" onmouseout="esconderTooltip()" onclick="mostrarRegras('tempo')">Modo com Tempo</button>
+      <button onmouseover="mostrarTooltip('Dois jogadores se alternam com troca de turno estilizada.')" onmouseout="esconderTooltip()" onclick="mostrarRegras('desafio')">Modo Desafio</button>
+      <button onmouseover="mostrarTooltip('Responda com 4 alternativas e questões infinitas.')" onmouseout="esconderTooltip()" onclick="mostrarRegras('alternativas')">Modo Alternativas</button>
+      <div id="tooltip" class="tooltip"></div>
+    </div>
+  </div>
+
+  <!-- Pop-up de Regras -->
+  <div id="popup" style="display: none;">      
+    <div class="popup-content">
+      <div class="back-button" onclick="voltarModo()"><i class="fa-solid fa-x" style="color: #000;"></i></div>
+      <h2>Regras do Jogo</h2>
+      <p id="regrasTexto"></p>
+      <button onclick="iniciarJogo()">Ok!</button>
+    </div>
+  </div>
+
+  <!-- Jogo para Modos Normal e com Tempo -->
+  <div id="gameContainer">
+    <div class="back-button" onclick="voltarModo()"><i class="fa-solid fa-x" style="color: #000;"></i></div>
+    <h1>Jogo da Potenciação</h1>
+    <p id="questao"></p>
+    <input type="number" id="resposta" placeholder="Digite a resposta">
+    <button onclick="verificar()">Verificar</button>
+    <p id="feedback"></p>
+    <p>Pontuação: <span id="pontuacao">0</span></p>
+    <p id="timerContainer" style="display: none;">Tempo restante: <span id="timer">60</span> segundos</p>
+  </div>
+
+    <!-- Modal para troca de turno no modo Desafio -->
+    <div id="turnSwitcher">
+        <span id="turnNumber"></span>
+      </div>
+
+
+  <!-- Jogo para o Modo Desafio -->
+  <div id="desafioContainer">
+
+    <div id="players">
+      <div id="player1" class="player">
+        <h3>Jogador 1</h3>
+        <div class="trunk">
+          <div class="nail" id="nail1"></div>
+        </div>
+        <p>Pontuação: <span id="score1">0</span></p>
+      </div>
+      <div id="player2" class="player">
+        <h3>Jogador 2</h3>
+        <div class="trunk">
+          <div class="nail" id="nail2"></div>
+        </div>
+        <p>Pontuação: <span id="score2">0</span></p>
+      </div>
+    </div>    
+    
+    <div id="desafioGameArea">
+      <div class="back-button" onclick="voltarModo()"><i class="fa-solid fa-x" style="color: #000;"></i></div>
+      <p id="questaoDesafio"></p>
+      <input type="number" id="respostaDesafio" placeholder="Digite a resposta">
+      <button onclick="verificarDesafio()">Verificar</button>
+      <p id="feedbackDesafio"></p>
+      <p id="timerDesafio">Tempo: <span id="timerD">60</span> segundos</p>
+    </div>
+  </div>
+
+  <!-- Jogo para o Modo Alternativas -->
+  <div id="alternativasContainer">
+    <div class="back-button" onclick="voltarModo()"><i class="fa-solid fa-x" style="color: #000;"></i></div>
+    <h1>Modo Alternativas</h1>
+    <p id="questaoAlt"></p>
+    <div id="opcoesAlt"></div>
+    <p id="feedbackAlt"></p>
+    <p>Pontuação: <span id="pontuacaoAlt">0</span></p>
+  </div>
+
+  <!-- Troca de Tema (canto inferior direito) -->
+  <div class="theme-switch-wrapper">
+    <label class="theme-switch">
+      <input type="checkbox" class="theme-switch__checkbox">
+      <div class="theme-switch__container">
+        <div class="theme-switch__clouds"></div>
+        <div class="theme-switch__stars-container">
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 144 55" fill="none">
+            <path fill-rule="evenodd" clip-rule="evenodd" d="M135.831 3.00688C135.055 3.85027 134.111 4.29946 133 4.35447C134.111 4.40947 135.055 4.85867 135.831 5.71123C136.607 6.55462 136.996 7.56303 136.996 8.72727C136.996 7.95722 137.172 7.25134 137.525 6.59129C137.886 5.93124 138.372 5.39954 138.98 5.00535C139.598 4.60199 140.268 4.39114 141 4.35447C139.88 4.2903 138.936 3.85027 138.16 3.00688C137.384 2.16348 136.996 1.16425 136.996 0C136.996 1.16425 136.607 2.16348 135.831 3.00688ZM31 23.3545C32.1114 23.2995 33.0551 22.8503 33.8313 22.0069C34.6075 21.1635 34.9956 20.1642 34.9956 19C34.9956 20.1642 35.3837 21.1635 36.1599 22.0069C36.9361 22.8503 37.8798 23.2903 39 23.3545C38.2679 23.3911 37.5976 23.602 36.9802 24.0053C36.3716 24.3995 35.8864 24.9312 35.5248 25.5913C35.172 26.2513 34.9956 26.9572 34.9956 27.7273C34.9956 26.563 34.6075 25.5546 33.8313 24.7112C33.0551 23.8587 32.1114 23.4095 31 23.3545ZM0 36.3545C1.11136 36.2995 2.05513 35.8503 2.83131 35.0069C3.6075 34.1635 3.99559 33.1642 3.99559 32C3.99559 33.1642 4.38368 34.1635 5.15987 35.0069C5.93605 35.8503 6.87982 36.2903 8 36.3545C7.26792 36.3911 6.59757 36.602 5.98015 37.0053C5.37155 37.3995 4.88644 37.9312 4.52481 38.5913C4.172 39.2513 3.99559 39.9572 3.99559 40.7273C3.99559 39.563 3.6075 38.5546 2.83131 37.7112C2.05513 36.8587 1.11136 36.4095 0 36.3545ZM56.8313 24.0069C56.0551 24.8503 55.1114 25.2995 54 25.3545C55.1114 25.4095 56.0551 25.8587 56.8313 26.7112C57.6075 27.5546 57.9956 28.563 57.9956 29.7273C57.9956 28.9572 58.172 28.2513 58.5248 27.5913C58.8864 26.9312 59.3716 26.3995 59.9802 26.0053C60.5976 25.602 61.2679 25.3911 62 25.3545C60.8798 25.2903 59.9361 24.8503 59.1599 24.0069C58.3837 23.1635 57.9956 22.1642 57.9956 21C57.9956 22.1642 57.6075 23.1635 56.8313 24.0069ZM81 25.3545C82.1114 25.2995 83.0551 24.8503 83.8313 24.0069C84.6075 23.1635 84.9956 22.1642 84.9956 21C84.9956 22.1642 85.3837 23.1635 86.1599 24.0069C86.9361 24.8503 87.8798 25.2903 89 25.3545C88.2679 25.3911 87.5976 25.602 86.9802 26.0053C86.3716 26.3995 85.8864 26.9312 85.5248 27.5913C85.172 28.2513 84.9956 28.9572 84.9956 29.7273C84.9956 28.563 84.6075 27.5546 83.8313 26.7112C83.0551 25.8587 82.1114 25.4095 81 25.3545ZM136 36.3545C137.111 36.2995 138.055 35.8503 138.831 35.0069C139.607 34.1635 139.996 33.1642 139.996 32C139.996 33.1642 140.384 34.1635 141.16 35.0069C141.936 35.8503 142.88 36.2903 144 36.3545C143.268 36.3911 142.598 36.602 141.98 37.0053C141.372 37.3995 140.886 37.9312 140.525 38.5913C140.172 39.2513 139.996 39.9572 139.996 40.7273C139.996 39.563 139.607 38.5546 138.831 37.7112C138.055 36.8587 137.111 36.4095 136 36.3545ZM101.831 49.0069C101.055 49.8503 100.111 50.2995 99 50.3545C100.111 50.4095 101.055 50.8587 101.831 51.7112C102.607 52.5546 102.996 53.563 102.996 54.7273C102.996 53.9572 103.172 53.2513 103.525 52.5913C103.886 51.9312 104.372 51.3995 104.98 51.0053C105.598 50.602 106.268 50.3911 107 50.3545C105.88 50.2903 104.936 49.8503 104.16 49.0069C103.384 48.1635 102.996 47.1642 102.996 46C102.996 47.1642 102.607 48.1635 101.831 49.0069Z" fill="currentColor"></path>
+          </svg>
+        </div>
+        <div class="theme-switch__circle-container">
+          <div class="theme-switch__sun-moon-container">
+            <div class="theme-switch__moon">
+              <div class="theme-switch__spot"></div>
+              <div class="theme-switch__spot"></div>
+              <div class="theme-switch__spot"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </label>
+  </div>
+
+  <script>
+     // Função para voltar à tela de seleção de modos
+     function voltarModo() {
+      // Esconde todos os containers de jogo
+      document.getElementById("gameContainer").style.display = "none";
+      document.getElementById("popup").style.display = "none";
+      document.getElementById("alternativasContainer").style.display = "none";
+      document.getElementById("desafioContainer").style.display = "none";
+      // Exibe a tela de seleção de modos
+      document.getElementById("modeSelection").style.display = "flex";
+    }
+
+    // Variáveis e funções do jogo (já existentes)
+    let modo; // 'normal', 'tempo', 'desafio' ou 'alternativas'
+    let usedQuestions = new Set();
+    function gerarQuestaoUnica(maxBase, maxExpo) {
+      let base, expoente, key;
+      let totalPossibilidades = maxBase * maxExpo;
+      if (usedQuestions.size >= totalPossibilidades) {
+        usedQuestions.clear();
+      }
+      do {
+        base = Math.floor(Math.random() * maxBase) + 1;
+        expoente = Math.floor(Math.random() * maxExpo) + 1;
+        key = `${base},${expoente}`;
+      } while (usedQuestions.has(key));
+      usedQuestions.add(key);
+      return { base, expoente };
+    }
+    let pontuacao = 0, tempoRestante = 60, intervaloTempo;
+    let base, expoente, respostaCorreta;
+    let currentPlayer = 1;
+    let score1 = 0, score2 = 0;
+    let timerDesafio = 60, intervaloDesafio;
+    let pontuacaoAlt = 0;
+    function mostrarTooltip(texto) {
+  let tooltip = document.getElementById('tooltip');
+  tooltip.textContent = texto;
+  tooltip.style.display = 'block';
+  // Ajuste os offsets conforme necessário
+  tooltip.style.left = (event.clientX + 10) + 'px';
+  tooltip.style.top = (event.clientY - 20) + 'px';
+}
+
+
+    function esconderTooltip() {
+      document.getElementById('tooltip').style.display = 'none';
+    }
+    function mostrarRegras(modoSelecionado) {
+      modo = modoSelecionado;
+      let regrasTexto = "";
+      if (modo === "normal") {
+        regrasTexto = "No Modo Normal, responda questões de potenciação sem limite de tempo. Cada acerto aumenta sua pontuação. Se errar, a potenciaçao muda.";
+      } else if (modo === "tempo") {
+        regrasTexto = "No Modo com Tempo, você tem 60 segundos para responder o máximo de questões possível. Ao perder, você será avisado e o tempo reinicia.";
+      } else if (modo === "desafio") {
+        regrasTexto = "No Modo Desafio, dois jogadores se alternam. Cada jogador tem 60 segundos por turno. Se acertar, sua barra desce; se errar ou o tempo acabar, o turno muda para o proximo jogador. O primeiro a acertar 5 vezes vence!";
+      } else if (modo === "alternativas") {
+        regrasTexto = "No Modo Alternativas, responda escolhendo uma das 4 opções apresentadas. As questões são infinitas e não se repetem.";
+      }
+      document.getElementById("regrasTexto").textContent = regrasTexto;
+      document.getElementById("popup").style.display = "flex";
+    }
+    function iniciarJogo() {
+      document.getElementById("popup").style.display = "none";
+      document.getElementById("modeSelection").style.display = "none";
+      if (modo === "normal" || modo === "tempo") {
+        document.getElementById("gameContainer").style.display = "block";
+        if (modo === "tempo") {
+          document.getElementById("timerContainer").style.display = "block";
+          iniciarTimer();
+        }
+        gerarQuestaoNormal();
+      } else if (modo === "desafio") {
+        document.getElementById("desafioContainer").style.display = "block";
+        iniciarDesafioTurno();
+      } else if (modo === "alternativas") {
+        document.getElementById("alternativasContainer").style.display = "block";
+        gerarQuestaoAlternativas();
+      }
+    }
+    function iniciarTimer() {
+      tempoRestante = 60;
+      document.getElementById("timer").textContent = tempoRestante;
+      intervaloTempo = setInterval(() => {
+        if (tempoRestante > 0) {
+          tempoRestante--;
+          document.getElementById("timer").textContent = tempoRestante;
+        } else {
+          clearInterval(intervaloTempo);
+          alert("Você perdeu! Reiniciando o tempo...");
+          pontuacao = 0;
+          document.getElementById("pontuacao").textContent = pontuacao;
+          iniciarTimer();
+          gerarQuestaoNormal();
+        }
+      }, 1000);
+    }
+    function gerarQuestaoNormal() {
+      let dados = gerarQuestaoUnica(10, 3);
+      base = dados.base;
+      expoente = dados.expoente;
+      respostaCorreta = Math.pow(base, expoente);
+      document.getElementById("questao").textContent = `Quanto é ${base}^${expoente}?`;
+      document.getElementById("resposta").value = '';
+      document.getElementById("feedback").textContent = '';
+    }
+    function verificar() {
+      let respostaUsuario = parseInt(document.getElementById("resposta").value);
+      if (respostaUsuario === respostaCorreta) {
+        pontuacao++;
+        document.getElementById("pontuacao").textContent = pontuacao;
+        document.getElementById("feedback").textContent = "Correto!";
+        document.getElementById("feedback").style.color = "green";
+      } else {
+        document.getElementById("feedback").textContent = "Errado, tente novamente.";
+        document.getElementById("feedback").style.color = "red";
+      }
+      gerarQuestaoNormal();
+    }
+    function iniciarDesafioTurno() {
+      timerDesafio = 60;
+      document.getElementById("timerD").textContent = timerDesafio;
+      document.getElementById("feedbackDesafio").textContent = "";
+      document.getElementById("respostaDesafio").value = "";
+      atualizarIndicadorJogador();
+      if (intervaloDesafio) clearInterval(intervaloDesafio);
+      intervaloDesafio = setInterval(() => {
+        if (timerDesafio > 0) {
+          timerDesafio--;
+          document.getElementById("timerD").textContent = timerDesafio;
+        } else {
+          clearInterval(intervaloDesafio);
+          iniciarContagemTroca();
+        }
+      }, 1000);
+      gerarQuestaoDesafio();
+    }
+    function gerarQuestaoDesafio() {
+      let maxBase = 10, maxExpo = 3;
+      if (currentPlayer === 1) {
+        maxBase = 10 + score1;
+        maxExpo = 3 + Math.floor(score1 / 2);
+      } else {
+        maxBase = 10 + score2;
+        maxExpo = 3 + Math.floor(score2 / 2);
+      }
+      let dados = gerarQuestaoUnica(maxBase, maxExpo);
+      base = dados.base;
+      expoente = dados.expoente;
+      respostaCorreta = Math.pow(base, expoente);
+      document.getElementById("questaoDesafio").textContent = `Jogador ${currentPlayer}: Quanto é ${base}^${expoente}?`;
+      document.getElementById("respostaDesafio").value = "";
+    }
+    function verificarDesafio() {
+      let respostaUsuario = parseInt(document.getElementById("respostaDesafio").value);
+      if (respostaUsuario === respostaCorreta) {
+        document.getElementById("feedbackDesafio").textContent = "Correto!";
+        document.getElementById("feedbackDesafio").style.color = "green";
+        if (currentPlayer === 1) {
+          score1++;
+          document.getElementById("score1").textContent = score1;
+          animarNail("nail1", score1);
+          if (score1 >= 5) {
+            alert("Jogador 1 venceu!");
+            location.reload();
+            return;
+          }
+        } else {
+          score2++;
+          document.getElementById("score2").textContent = score2;
+          animarNail("nail2", score2);
+          if (score2 >= 5) {
+            alert("Jogador 2 venceu!");
+            location.reload();
+            return;
+          }
+        }
+        gerarQuestaoDesafio();
+      } else {
+        document.getElementById("feedbackDesafio").textContent = "Errado!";
+        document.getElementById("feedbackDesafio").style.color = "red";
+        clearInterval(intervaloDesafio);
+        iniciarContagemTroca();
+      }
+    }
+    function animarNail(nailId, acertos) {
+      let deslocamento = acertos * 40;
+      document.getElementById(nailId).style.top = deslocamento + "px";
+    }
+    // Modal de troca de turno estilizado
+    function iniciarContagemTroca() {
+      let contagem = 5;
+      document.getElementById("turnNumber").textContent = contagem;
+      document.getElementById("turnSwitcher").style.display = "flex";
+      let intervalo = setInterval(() => {
+        contagem--;
+        document.getElementById("turnNumber").textContent = contagem;
+        if (contagem <= 0) {
+          clearInterval(intervalo);
+          document.getElementById("turnSwitcher").style.display = "none";
+          trocarTurno();
+        }
+      }, 1000);
+    }
+    function trocarTurno() {
+      clearInterval(intervaloDesafio);
+      currentPlayer = (currentPlayer === 1) ? 2 : 1;
+      iniciarDesafioTurno();
+    }
+    function atualizarIndicadorJogador() {
+      document.getElementById("questaoDesafio").textContent = `Jogador ${currentPlayer}: Qual é a resposta?`;
+    }
+
+    function gerarQuestaoAlternativas() {
+      let dados = gerarQuestaoUnica(10, 3);
+      base = dados.base;
+      expoente = dados.expoente;
+      respostaCorreta = Math.pow(base, expoente);
+      document.getElementById("questaoAlt").textContent = `Quanto é ${base}^${expoente}?`;
+      let opcoes = [];
+      opcoes.push(respostaCorreta);
+      while(opcoes.length < 4) {
+        let variacao = Math.floor(Math.random() * 10) - 5;
+        let opcao = respostaCorreta + variacao;
+        if(opcao !== respostaCorreta && opcao >= 0 && !opcoes.includes(opcao)){
+          opcoes.push(opcao);
+        }
+      }
+      opcoes.sort(() => Math.random() - 0.5);
+      let container = document.getElementById("opcoesAlt");
+      container.innerHTML = "";
+      opcoes.forEach(opcao => {
+        let div = document.createElement("div");
+        div.className = "alt-option";
+        div.textContent = opcao;
+        div.onclick = () => verificarAlternativa(opcao);
+        container.appendChild(div);
+      });
+      document.getElementById("feedbackAlt").textContent = "";
+    }
+    function verificarAlternativa(escolha) {
+      let container = document.getElementById("opcoesAlt");
+      Array.from(container.children).forEach(div => {
+        div.onclick = null;
+        if(Number(div.textContent) === respostaCorreta) {
+          div.style.backgroundColor = "#00FF00";
+        } else {
+          div.style.backgroundColor = "#FF0000";
+        }
+      });
+      if(escolha === respostaCorreta){
+        document.getElementById("feedbackAlt").textContent = "Correto!";
+        document.getElementById("feedbackAlt").style.color = "green";
+        pontuacaoAlt++;
+        document.getElementById("pontuacaoAlt").textContent = pontuacaoAlt;
+      } else {
+        document.getElementById("feedbackAlt").textContent = "Errado!";
+        document.getElementById("feedbackAlt").style.color = "red";
+      }
+      setTimeout(gerarQuestaoAlternativas, 2000);
+    }
+
+    // Lógica do Theme Switch: altere as cores do fundo aqui conforme desejar.
+    const themeCheckbox = document.querySelector('.theme-switch__checkbox');
+    themeCheckbox.addEventListener('change', function() {
+      if(this.checked) {
+        // Modo noite: altere as cores abaixo para o fundo "noite"
+        document.body.style.backgroundColor = "#000000";
+      } else {
+        // Modo dia: altere as cores abaixo para o fundo "dia"
+        document.body.style.backgroundColor = "#ffffff";
+      }
+    }); 
+  </script>
+</body>
+<!-- Feito por Michael, Eder e Rafael -->
+</html>
